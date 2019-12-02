@@ -1,17 +1,10 @@
 'use strict'
 
-const { Enum } = require('enumify')
+const Enumeration = require('@northscaler/enum-support')
 
-class PrimitiveAction extends Enum {
-  static staticActions () {
-    return [PrimitiveAction.CREATE, PrimitiveAction.REFERENCE]
-  }
-
-  static instanceActions () {
-    return [PrimitiveAction.READ, PrimitiveAction.UPDATE, PrimitiveAction.DELETE, PrimitiveAction.SECURE]
-  }
-}
-
-PrimitiveAction.initEnum(['CREATE', 'REFERENCE', 'READ', 'UPDATE', 'DELETE', 'SECURE'])
+const PrimitiveAction = Enumeration.new({
+  name: 'PrimitiveAction',
+  values: ['CREATE', 'REFERENCE', 'READ', 'UPDATE', 'DELETE', 'SECURE']
+})
 
 module.exports = PrimitiveAction
