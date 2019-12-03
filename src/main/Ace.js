@@ -1,8 +1,6 @@
 'use strict'
 
-const StaticAccessControlStrategy = require('./StaticAccessControlStrategy')
-const GRANT = StaticAccessControlStrategy.GRANT
-const DENY = StaticAccessControlStrategy.DENY
+const { GRANT, DENY } = require('./StaticAccessControlStrategy')
 const DEFAULT_SAMENESS_TESTER = require('./SamenessTester')
 
 /**
