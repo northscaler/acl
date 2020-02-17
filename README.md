@@ -7,13 +7,13 @@ There are four elements required in the determination of access:
 * __securable__:  The thing being secured.
 * __action__:  The action being performed on a securable.
 This library defines a minimal set of [primitive actions](src/main/PrimitiveAction.js), but you can define your own.
-* __access control entry__:  the thing that binds the principal, securable and action together along with the "granted" (or "denied") boolean, or some other strategy.
-Some systems call this a "permission", a "right" or a "grant" in the granting sense, and a "denial", an "antipermission", or a "negative permission" in the denying sense.
-We use a the more general term "access control entry" (ACE), which can mean either a permission or a denial.
+* __access control entry__:  the binding of the principal, securable and action together along with the "granted" (or "denied") boolean, or some other strategy.
+Some systems call this a "permission", a "right" or a "grant" in the positive sense, and a "denial", an "antipermission", or a "negative permission" in the negative sense.
+We use the more general term "access control entry" (ACE), which can mean either a permission or a denial.
 
-The primary export of this module is a class called `Acl`, which has interrogation methods `grants` & `denies`, as well as mutating methods like `grant`, `ungrant`, `deny` & `undeny`.
+The primary export of this module is a class called `Acl`, which has interrogation methods `grants` & `denies`, as well as mutating methods like `grant`, `ungrant`, `deny`, `undeny`, or, the more general `secure` & `unsecure` methods.
 
->NOTE: In this implementation, a single denial vetoes any number of grants.
+>NOTE: In this implementation, a single denial vetoes any number of grants, and the absence of any grants denies.
 
 It supports declarative or static security (think "granted" or "denied" as a simple boolean), as well as algorithmic or dynamic security (think "granted if today is a weekday", "denied if the balance is greater than 10000", or similar).
 
