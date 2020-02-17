@@ -12,47 +12,52 @@ class Acl {
   }
 
   /**
-   * Returns `true` if all of the given actions are granted among the given principals against the given securable, as long as none of the principals are denied the ability to take any of the actions.
-   * @param principals
-   * @param actions
-   * @param securable
-   * @param data
-   * @return {boolean}
+   * Returns whether all of the given actions are granted amongst the given principals against the given securable, and none of the principals are denied any of the actions.
+   *
+   * @param {Object} arg The argument to be deconstructed.
+   * @param {any[]} arg.principals The **principals** that must individually not be explicitly denied `arg.actions` and that must collectively be granted `arg.actions`.
+   * @param {any[]} arg.actions The actions none of which must be denied from individual `arg.principals` and all of which must be collectively granted amongst `arg.principals`.
+   * @param {any} arg.securable The thing access to which is being governed.
+   * @param {any} [arg.data] Any contextual information needed for the access control decision; passed into each ACE's `denies` & `grants` methods.
+   * @return {boolean} Whether the `arg.principals` are collectively granted.
+   * @type {MultiGrantsDecisionFn}
    */
   grants ({ principals, actions, securable, data }) {
     principals = this._ensureArray(principals)
     actions = this._ensureArray(actions)
 
     const aces = this._findApplicableAces({ principals, actions, securable })
-    if (this._denies({ principals, actions, securable, aces })) return false
+    if (this._denies({ principals, actions, securable, data, aces })) return false
+    // else no one's denied, so check for grants
 
+    // start with each unique action not being granted
     const grantsByAction = actions.reduce((grants, action) => {
       grants[action] = false
       return grants
     }, {})
 
-    for (const ace of aces) {
-      for (const principal of principals) {
-        for (const action of actions) {
+    aces.forEach(ace => {
+      principals.forEach(principal => {
+        actions.forEach(action => {
+          // skip if action is already granted
           if (!grantsByAction[action] && ace.grants({ principal, action, securable, data })) {
             grantsByAction[action] = true
           }
-        }
-      }
-    }
+        })
+      })
+    })
 
-    return !actions
-      .map(action => grantsByAction[action])
-      .includes(false)
+    return !actions.map(action => grantsByAction[action]).includes(false) // whether any actions weren't granted
   }
 
   /**
-   * Returns `true` if any of the given principals are explicitly denied taking any of the given actions against the given securable, else returns `false`.
-   * @param principals
-   * @param actions
-   * @param securable
-   * @param data
-   * @return {boolean}
+   * Returns whether any of the given principals are explicitly denied any of the given actions against the given securable.
+   * @param {Object} arg The argument to be deconstructed.
+   * @param {any[]} arg.principals The principals that are individually tested for explicit denial of any of the `arg.actions`.
+   * @param {any[]} arg.actions The actions none of which must be explicitly denied from `arg.principals`.
+   * @param {any} arg.securable The thing access to which is being governed.
+   * @param {any} [arg.data] Any contextual information needed for the access control decision; passed to each ACE's `denies` & `grants` methods.
+   * @return {boolean} Whether any of the `arg.principals` are denied any of the (@param actions}.
    */
   denies ({ principals, actions, securable, data }) {
     principals = this._ensureArray(principals)
@@ -125,10 +130,32 @@ class Acl {
     return this.unsecure({ strategy: DENY, principal, securable, action })
   }
 
+  /**
+   * Adds an access control entry (ACE).
+   * Idempotent if the ACE already exists.
+   *
+   * @param {Object} arg The argument to be deconstructed.
+   * @param {AccessControlStrategy} arg.strategy The ACE's strategy.
+   * @param {any} arg.principal The ACE's principal.
+   * @param {any} arg.securable The ACE's securable.
+   * @param {any} arg.action The ACE's action.
+   * @return {Acl} This ACL in order to support a builder pattern.
+   */
   secure ({ strategy, principal, securable, action }) {
     return this._secure({ strategy, principal, securable, action, add: true })
   }
 
+  /**
+   * Removes an access control entry (ACE).
+   * Idempotent if the ACE already absent.
+   *
+   * @param {Object} arg The argument to be deconstructed.
+   * @param {AccessControlStrategy} arg.strategy The ACE's strategy.
+   * @param {any} arg.principal The ACE's principal.
+   * @param {any} arg.securable The ACE's securable.
+   * @param {any} arg.action The ACE's action.
+   * @return {Acl} This ACL in order to support a builder pattern.
+   */
   unsecure ({ strategy, principal, securable, action }) {
     return this._secure({ strategy, principal, securable, action, add: false })
   }
@@ -141,9 +168,9 @@ class Acl {
       (securable ? ace.appliesToSecurable(securable) : true)
     )
 
-    if (add && index === -1) { // not found, so add
+    if (add && index === -1) { // not found, so add, else ignore because it's already there
       this._aces.push(Ace.of({ strategy, principal, securable, action }))
-    } else if (!add && index !== -1) { // found, so remove
+    } else if (!add && index !== -1) { // found, so remove, else ignore because it's already not there
       this._aces.splice(index, 1)
     }
 
