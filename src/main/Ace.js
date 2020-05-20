@@ -1,6 +1,6 @@
 'use strict'
 
-const { GRANT, DENY } = require('./StaticAccessControlStrategy')
+const { GRANT, DENY, PERMIT } = require('./StaticAccessControlStrategy')
 const DEFAULT_SAMENESS_TESTER = require('./SamenessTester')
 
 /**
@@ -14,6 +14,21 @@ const DEFAULT_SAMENESS_TESTER = require('./SamenessTester')
  */
 class Ace {
   /**
+   * A factory method for producing an {@link Ace} that statically permits the principal to take the action with respect to the securable.
+   * @param {Object} arg The argument.
+   * @param {AccessControlStrategy} arg.strategy The {@link Ace}'s strategy.
+   * @param {any} arg.principal The {@link Ace}'s principal.
+   * @param {any} arg.securable The {@link Ace}'s securable.
+   * @param {any} arg.action The {@link Ace}'s action.
+   * @param {SamenessTesterFn} [arg.samenessTesterFn] A function used to determine if two objects are equivalent, defaulting to {@link Ace.testDefaultSameness}.
+   * @return {Ace}
+   * @since 1.3.0
+   */
+  static permitting ({ principal, securable, action, samenessTesterFn } = {}) {
+    return Ace.of({ strategy: PERMIT, principal, securable, action, samenessTesterFn })
+  }
+
+  /**
    * A factory method for producing an {@link Ace} that statically grants the action to the principal with respect to the securable.
    * @param {Object} arg The argument.
    * @param {AccessControlStrategy} arg.strategy The {@link Ace}'s strategy.
@@ -22,9 +37,10 @@ class Ace {
    * @param {any} arg.action The {@link Ace}'s action.
    * @param {SamenessTesterFn} [arg.samenessTesterFn] A function used to determine if two objects are equivalent, defaulting to {@link Ace.testDefaultSameness}.
    * @return {Ace}
+   * @deprecated use Ace.permitting
    */
   static granting ({ principal, securable, action, samenessTesterFn } = {}) {
-    return Ace.of({ strategy: GRANT, principal, securable, action, samenessTesterFn })
+    return Ace.permitting(...arguments)
   }
 
   /**
@@ -95,7 +111,14 @@ class Ace {
   }
 
   _testSetStrategy (strategy) {
-    if (typeof strategy?.grants !== 'function' || typeof strategy?.denies !== 'function') throw new Error('invalid strategy given')
+    if (
+      (strategy?.permits && typeof strategy?.permits !== 'function') ||
+      (strategy?.grants && typeof strategy?.grants !== 'function') ||
+      (!strategy?.grants && !strategy?.permits) ||
+      typeof strategy?.denies !== 'function'
+    ) {
+      throw new Error('invalid strategy given')
+    }
     return strategy
   }
 
@@ -112,6 +135,24 @@ class Ace {
   }
 
   /**
+   * Returns whether this {@link Ace} permits and does not explicitly deny the given **principal** the **action** with respect to the given **securable**, given optional **data**.
+   *
+   * @param {AccessControlTuple} arg The argument to be deconstructed.
+   * @param {any} arg.principal The principal in question.
+   * @param {any} arg.action The action in question.
+   * @param {any} arg.securable The securable in question.
+   * @param {any} [arg.data] Optional contextual data.
+   * @since 1.3.0
+   */
+  permits ({ principal, action, securable, data } = {}) {
+    return (
+      this._applies({ principal, securable, action }) &&
+      !this._strategy.denies({ principal, action, securable, data }) &&
+      (this._strategy.permits || this._strategy.grants).bind(this._strategy)({ principal, action, securable, data })
+    )
+  }
+
+  /**
    * Returns whether this {@link Ace} grants and does not explicitly deny the given **principal** the **action** with respect to the given **securable**, given optional **data**.
    *
    * @param {AccessControlTuple} arg The argument to be deconstructed.
@@ -119,13 +160,10 @@ class Ace {
    * @param {any} arg.action The action in question.
    * @param {any} arg.securable The securable in question.
    * @param {any} [arg.data] Optional contextual data.
+   * @deprecated use Ace#permits
    */
   grants ({ principal, action, securable, data } = {}) {
-    return (
-      this._applies({ principal, securable, action }) &&
-      !this._strategy.denies({ principal, action, securable, data }) &&
-      this._strategy.grants({ principal, action, securable, data })
-    )
+    return this.permits(...arguments)
   }
 
   /**
@@ -157,6 +195,7 @@ class Ace {
   }
 
   appliesToStrategy (strategy) {
+    strategy = strategy === GRANT ? PERMIT : strategy
     return this._testSameness(strategy, this._strategy)
   }
 }

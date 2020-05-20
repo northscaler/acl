@@ -1,6 +1,6 @@
 'use strict'
 
-const { GRANT, DENY } = require('./StaticAccessControlStrategy')
+const { DENY, PERMIT } = require('./StaticAccessControlStrategy')
 const Ace = require('./Ace')
 
 /**
@@ -21,8 +21,9 @@ class Acl {
    * @param {any} [arg.data] Any contextual information needed for the access control decision; passed into each ACE's `denies` & `grants` methods.
    * @return {boolean} Whether the `arg.principals` are collectively granted.
    * @type {MultiGrantsDecisionFn}
+   * @since 1.3.0
    */
-  grants ({ principals, actions, securable, data }) {
+  permits ({ principals, actions, securable, data }) {
     principals = this._ensureArray(principals)
     actions = this._ensureArray(actions)
 
@@ -48,6 +49,22 @@ class Acl {
     })
 
     return !actions.map(action => grantsByAction[action]).includes(false) // whether any actions weren't granted
+  }
+
+  /**
+   * Returns whether all of the given actions are granted amongst the given principals against the given securable, and none of the principals are denied any of the actions.
+   *
+   * @param {Object} arg The argument to be deconstructed.
+   * @param {any[]} arg.principals The **principals** that must individually not be explicitly denied `arg.actions` and that must collectively be granted `arg.actions`.
+   * @param {any[]} arg.actions The actions none of which must be denied from individual `arg.principals` and all of which must be collectively granted amongst `arg.principals`.
+   * @param {any} arg.securable The thing access to which is being governed.
+   * @param {any} [arg.data] Any contextual information needed for the access control decision; passed into each ACE's `denies` & `grants` methods.
+   * @return {boolean} Whether the `arg.principals` are collectively granted.
+   * @type {MultiGrantsDecisionFn}
+   * @deprecated use Acl#permits
+   */
+  grants ({ principals, actions, securable, data }) {
+    return this.permits(...arguments)
   }
 
   /**
@@ -114,12 +131,32 @@ class Acl {
     return Array.isArray(it) ? it : [it]
   }
 
-  grant ({ principal, securable, action }) {
-    return this.secure({ strategy: GRANT, principal, securable, action })
+  /**
+   * @since 1.3.0
+   */
+  permit ({ principal, securable, action }) {
+    return this.secure({ strategy: PERMIT, principal, securable, action })
   }
 
+  /**
+   * @deprecated use Acl#permit
+   */
+  grant ({ principal, securable, action }) {
+    return this.permit(...arguments)
+  }
+
+  /**
+   * @since 1.3.0
+   */
+  unpermit ({ principal, securable, action }) {
+    return this.unsecure({ strategy: PERMIT, principal, securable, action })
+  }
+
+  /**
+   * @deprecated use Acl#unpermit
+   */
   ungrant ({ principal, securable, action }) {
-    return this.unsecure({ strategy: GRANT, principal, securable, action })
+    return this.unpermit(...arguments)
   }
 
   deny ({ principal, securable, action }) {
