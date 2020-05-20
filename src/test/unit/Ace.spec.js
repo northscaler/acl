@@ -29,7 +29,9 @@ describe('Ace', () => {
     const ace = Ace.granting({ principal, action })
 
     expect(ace.grants({ principal, action })).to.equal(true)
+    expect(ace.permits({ principal, action })).to.equal(true)
     expect(ace.grants({ principal, action: uuid() })).to.equal(false)
+    expect(ace.permits({ principal, action: uuid() })).to.equal(false)
     expect(ace.denies({ principal, action })).to.equal(false)
     expect(ace.denies({ principal, action: uuid() })).to.equal(false)
     expect(ace.appliesToPrincipal(principal)).to.equal(true)
@@ -47,7 +49,9 @@ describe('Ace', () => {
     expect(ace.denies({ principal, action })).to.equal(true)
     expect(ace.denies({ principal, action: uuid() })).to.equal(false)
     expect(ace.grants({ principal, action })).to.equal(false)
+    expect(ace.permits({ principal, action })).to.equal(false)
     expect(ace.grants({ principal, action: uuid() })).to.equal(false)
+    expect(ace.permits({ principal, action: uuid() })).to.equal(false)
     expect(ace.appliesToPrincipal(principal)).to.equal(true)
     expect(ace.appliesToAction(action)).to.equal(true)
     expect(ace.appliesToSecurable()).to.equal(true)
@@ -68,7 +72,7 @@ describe('Ace', () => {
         this.loThreshold = loThreshold
       }
 
-      grants ({ principal, action, securable }) {
+      grants ({ principal, action, securable }) { // using deprecated protocol "grants" to ensure old strategies still work
         switch (action) {
           case close:
             switch (principal) {
@@ -126,31 +130,43 @@ describe('Ace', () => {
     expect(lo.appliesToSecurable(loAccount)).to.equal(true)
 
     expect(hi.grants({ principal: sally, action: close, securable: hiAccount })).to.equal(true)
+    expect(hi.permits({ principal: sally, action: close, securable: hiAccount })).to.equal(true)
     expect(hi.denies({ principal: sally, action: close, securable: hiAccount })).to.equal(false)
     expect(md.grants({ principal: sally, action: close, securable: mdAccount })).to.equal(true)
+    expect(md.permits({ principal: sally, action: close, securable: mdAccount })).to.equal(true)
     expect(md.denies({ principal: sally, action: close, securable: mdAccount })).to.equal(false)
     expect(lo.grants({ principal: sally, action: close, securable: loAccount })).to.equal(true)
+    expect(lo.permits({ principal: sally, action: close, securable: loAccount })).to.equal(true)
     expect(lo.denies({ principal: sally, action: close, securable: loAccount })).to.equal(false)
 
     expect(hi.grants({ principal: john, action: close, securable: hiAccount })).to.equal(false)
+    expect(hi.permits({ principal: john, action: close, securable: hiAccount })).to.equal(false)
     expect(hi.denies({ principal: john, action: close, securable: hiAccount })).to.equal(false)
     expect(md.grants({ principal: john, action: close, securable: mdAccount })).to.equal(true)
+    expect(md.permits({ principal: john, action: close, securable: mdAccount })).to.equal(true)
     expect(md.denies({ principal: john, action: close, securable: mdAccount })).to.equal(false)
     expect(lo.grants({ principal: john, action: close, securable: loAccount })).to.equal(true)
+    expect(lo.permits({ principal: john, action: close, securable: loAccount })).to.equal(true)
     expect(lo.denies({ principal: john, action: close, securable: loAccount })).to.equal(false)
 
     expect(hi.grants({ principal: felix, action: close, securable: hiAccount })).to.equal(false)
+    expect(hi.permits({ principal: felix, action: close, securable: hiAccount })).to.equal(false)
     expect(hi.denies({ principal: felix, action: close, securable: hiAccount })).to.equal(true)
     expect(md.grants({ principal: felix, action: close, securable: mdAccount })).to.equal(false)
+    expect(md.permits({ principal: felix, action: close, securable: mdAccount })).to.equal(false)
     expect(md.denies({ principal: felix, action: close, securable: mdAccount })).to.equal(true)
     expect(lo.grants({ principal: felix, action: close, securable: loAccount })).to.equal(false)
+    expect(lo.permits({ principal: felix, action: close, securable: loAccount })).to.equal(false)
     expect(lo.denies({ principal: felix, action: close, securable: loAccount })).to.equal(true)
 
     expect(hi.grants({ principal: jan, action: close, securable: hiAccount })).to.equal(false)
+    expect(hi.permits({ principal: jan, action: close, securable: hiAccount })).to.equal(false)
     expect(hi.denies({ principal: jan, action: close, securable: hiAccount })).to.equal(false)
     expect(md.grants({ principal: jan, action: close, securable: mdAccount })).to.equal(false)
+    expect(md.permits({ principal: jan, action: close, securable: mdAccount })).to.equal(false)
     expect(md.denies({ principal: jan, action: close, securable: mdAccount })).to.equal(false)
     expect(lo.grants({ principal: jan, action: close, securable: loAccount })).to.equal(true)
+    expect(lo.permits({ principal: jan, action: close, securable: loAccount })).to.equal(true)
     expect(lo.denies({ principal: jan, action: close, securable: loAccount })).to.equal(false)
   })
 })
