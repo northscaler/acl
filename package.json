@@ -1,6 +1,6 @@
 {
   "name": "@northscaler/acl",
-  "version": "1.3.1-rc.0",
+  "version": "1.3.1",
   "description": "Security via access control list (ACL)",
   "homepage": "https://gitlab.com/northscaler-public/acl.git",
   "repository": {
